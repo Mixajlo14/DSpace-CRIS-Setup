@@ -92,3 +92,19 @@ sa redom u kojem se podaci o datumu i autorima čitaju iz polja (`dc.date` i `dc
 webui.itemlist.columns = dc.date(date),dc.title(title),dc.creator(itemcrisref)
 ```
 
+* Prilikom povlačenja svih disertacija moguć je problem sa fajlovima koji u svom nazivu imaju sledeća slova (š, đ, č, ž, ć). Ovaj problem se rešava dodavanjem sledeće linije koda u fajlu `/opt/crisinstallation/dspace-parent/dspace-api/src/main/java/org/dspace/content/crosswalk/OREIngestionCrosswalk.java`, neposredno pre  `ARurl = new URL(processedURL);` linije.
+```
+processedURL = processedURL.replaceAll("(%C4%87|%C4%8|%C5%A1|%C5%BD|%c5%a1|%c5%bd|%c4%87|%c4%8)","+");
+```
+Nakon ovog koraka potrebno je ponovo pokrenuti build proces `dspace` i ponovo prekopirati sve veb aplikacije (`solr`,`jspui` i `xmlui`) u `tomcat` folder za veb aplikacije.
+
+* Ukoliko se prilikom preuzimanja disertacija u logovima pojavi neka od sledećih grešaka: `java.lang.OutOfMemoryError: Java heap space` ili `java.lang.OutOfMemoryError: GC overhead limit exceeded`, potrebno je izmeniti fajl `/etc/systemd/system/tomcat.service`. Potrebno je izmeniti vrednosti parametara `JAVA_OPTS` i `CATALINA_OPTS`.
+```
+Environment="JAVA_OPTS=-Xms2048M -Xmx2048M -Djava.security.egd=file:///dev/urandom -XX:-UseGCOverheadLimit"
+Environment="CATALINA_OPTS=-Xms2048M -Xmx2048M -server -XX:+UseParallelGC"
+```
+Nakon izmena na fajlu `tomcat.service` potrebno je restartovati `tomcat`.
+```
+systemctl daemon-reload
+service tomcat restart
+```
